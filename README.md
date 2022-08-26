@@ -42,7 +42,7 @@ ac_automata mode [input file path [output file path [function name]]]
 最终生成的匹配函数格式如下:
 ```c
 /**
- * @brief 有限自动机,程序自动生成
+ * @brief AC自动机,程序自动生成
  * @param str 要匹配的字符串
  * @param length 字符串长度
  * @param state 状态
@@ -65,51 +65,43 @@ unsigned match(char *str,unsigned length,unsigned short *state,unsigned short *s
             if(str[i]=='\x31'){*state=1;break;}
             if(str[i]=='\x32'){*state=8;break;}
             *state=0;
-            return i+1;
+            break;
         case 1:
             if(str[i]=='\x32'){*state=2;break;}
             *state=0;
-            return i+1;
+            break;
         case 2:
-            if(str[i]=='\x33'){*state=3;break;}
-            *state=0;
-            return i+1;
+            if(str[i]=='\x33'){*state=3;*state_out=1;break;}
+            *state=8;
+            break;
         case 3:
             if(str[i]=='\x34'){*state=4;break;}
-            *state_out=1;
-            return i;
+            return i-0;
         case 4:
-            if(str[i]=='\x35'){*state=5;break;}
-            *state=0;
-            return i+1;
+            if(str[i]=='\x35'){*state=5;*state_out=2;break;}
+            return i-1;
         case 5:
             if(str[i]=='\x36'){*state=6;break;}
-            *state_out=2;
-            return i;
+            return i-0;
         case 6:
             if(str[i]=='\x37'){*state_out=3;return i+1;}
-            *state=0;
-            return i+1;
+            return i-1;
         case 8:
-            if(str[i]=='\x33'){*state=9;break;}
+            if(str[i]=='\x33'){*state=9;*state_out=4;break;}
             *state=0;
-            return i+1;
+            break;
         case 9:
             if(str[i]=='\x34'){*state=10;break;}
-            *state_out=4;
-            return i;
+            return i-0;
         case 10:
-            if(str[i]=='\x35'){*state=11;break;}
-            *state=0;
-            return i+1;
+            if(str[i]=='\x35'){*state=11;*state_out=5;break;}
+            return i-1;
         case 11:
             if(str[i]=='\x36'){*state=12;break;}
-            *state_out=5;
-            return i;
+            return i-0;
         case 12:
             if(str[i]=='\x37'){*state_out=6;return i+1;}
-            *state=0;
-            return i+1;
+            return i-1;
         default:
             break;
         }
