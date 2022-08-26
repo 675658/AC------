@@ -14,6 +14,7 @@ typedef uint16_t ulonglong;
 struct trie_tree_node
 {
     unsigned char c;
+    unsigned char child_num;
     unsigned short state_out;
     unsigned short state;
     unsigned short fail;
@@ -41,6 +42,7 @@ unsigned short new_node(unsigned short father,unsigned char c)
         trie_tree=(struct trie_tree_node*)new_tree;
     }
     trie_tree[p_free_node].c=c;
+    trie_tree[p_free_node].child_num=0;
     trie_tree[p_free_node].state_out=0;
     trie_tree[p_free_node].state=p_free_node;
     trie_tree[p_free_node].fail=0;
@@ -87,6 +89,7 @@ int build_trie_tree(void)
     }
     trie_tree=(struct trie_tree_node*)new_tree;
     trie_tree[0].c=0;
+    trie_tree[0].child_num=0;
     trie_tree[0].state_out=0;
     trie_tree[0].state=0;
     trie_tree[0].father=0;
@@ -195,6 +198,7 @@ int add_word(unsigned char *word,int size)
         p_node=0;
         for(i=0;i<size;i++){
             if(trie_tree[p_node].child[word[i]]==0){
+                trie_tree[p_node].child_num++;
                 trie_tree[p_node].child[word[i]]=new_node(p_node,word[i]);
                 if(trie_tree[p_node].child[word[i]]==0){
                     return -1;
@@ -253,7 +257,13 @@ int main(int argc,char **argv)
     }
     build_trie_tree();
     fputs("/**\n",fp_out);
-    fputs(" * @brief AC自动机,程序自动生成\n * @param str 要匹配的字符串\n * @param length 字符串长度\n * @param state 状态\n * @param state_out 状态输出:\n",fp_out);
+    if(mode==1){
+        fputs(" * @brief 有限自动机,程序自动生成\n",fp_out);
+    }
+    else{
+        fputs(" * @brief AC自动机,程序自动生成\n",fp_out);
+    }
+    fputs(" * @param str 要匹配的字符串\n * @param length 字符串长度\n * @param state 状态\n * @param state_out 状态输出:\n",fp_out);
     while(fgets(buf1,256,fp_in)!=NULL){
         len=strlen(buf1);
         if(buf1[len-1]!='\n'){
@@ -283,13 +293,13 @@ int main(int argc,char **argv)
     fputs("    for(i=0;i<length;i++){\n",fp_out);
     fputs("        switch(*state){\n",fp_out);
     for(i=0;i<p_free_node;i++){
-        if(trie_tree[i].state_out!=0){
+        if(trie_tree[i].child_num==0){
             continue;
         }
         fprintf(fp_out,"        case %d:\n",trie_tree[i].state);
         for(j=0;j<256;j++){
             if(trie_tree[i].child[j]!=0){
-                if(trie_tree[trie_tree[i].child[j]].state_out!=0){
+                if(trie_tree[trie_tree[i].child[j]].state_out!=0 && trie_tree[trie_tree[i].child[j]].child_num==0){
                     fprintf(fp_out,"            if(str[i]=='\\x%.2x'){*state_out=%d;return i+1;}\n",j,trie_tree[trie_tree[i].child[j]].state_out);
                 }
                 else{
@@ -297,8 +307,20 @@ int main(int argc,char **argv)
                 }
             }
         }
-        fprintf(fp_out,"            *state=%d;\n",trie_tree[i].fail);
-        fputs("        break;\n",fp_out);
+        if(trie_tree[i].state_out!=0){
+            fprintf(fp_out,"            *state_out=%d;\n",trie_tree[i].state_out);
+            fputs("            return i;\n",fp_out);
+        }
+        else{
+            if(mode==1){
+                fputs("            *state=0;\n",fp_out);
+                fputs("            return i+1;\n",fp_out);
+            }
+            else{
+                fprintf(fp_out,"            *state=%d;\n",trie_tree[i].fail);
+                fputs("            break;\n",fp_out);
+            }
+        }
     }
     fputs("        default:\n            break;\n        }\n    }\n",fp_out);
     fputs("    return i+1;\n}\n",fp_out);
