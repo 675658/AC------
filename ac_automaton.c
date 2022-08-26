@@ -16,6 +16,7 @@ struct trie_tree_node
     unsigned char c;
     unsigned char child_num;
     unsigned short state_out;
+    unsigned short out_distance;
     unsigned short state;
     unsigned short fail;
     unsigned short father;
@@ -44,6 +45,7 @@ unsigned short new_node(unsigned short father,unsigned char c)
     trie_tree[p_free_node].c=c;
     trie_tree[p_free_node].child_num=0;
     trie_tree[p_free_node].state_out=0;
+    trie_tree[p_free_node].out_distance=0;
     trie_tree[p_free_node].state=p_free_node;
     trie_tree[p_free_node].fail=0;
     trie_tree[p_free_node].father=father;
@@ -91,6 +93,7 @@ int build_trie_tree(void)
     trie_tree[0].c=0;
     trie_tree[0].child_num=0;
     trie_tree[0].state_out=0;
+    trie_tree[0].out_distance=0;
     trie_tree[0].state=0;
     trie_tree[0].father=0;
     trie_tree[0].fail=0;
@@ -194,8 +197,12 @@ int add_word(unsigned char *word,int size)
 {
     unsigned i;
     unsigned short p_node;
+    unsigned short out_distance;
+    unsigned short last_state_out;
     if(size>0){
         p_node=0;
+        out_distance=0;
+        last_state_out=0;
         for(i=0;i<size;i++){
             if(trie_tree[p_node].child[word[i]]==0){
                 trie_tree[p_node].child_num++;
@@ -205,9 +212,18 @@ int add_word(unsigned char *word,int size)
                 }
             }
             p_node=trie_tree[p_node].child[word[i]];
+            if(trie_tree[p_node].state_out!=last_state_out && trie_tree[p_node].state_out!=0){
+                last_state_out=trie_tree[p_node].state_out;
+                out_distance=1;
+            }
+            else if(out_distance!=0){
+                trie_tree[p_node].out_distance=out_distance;
+                out_distance++;
+            }
         }
         output_state_con++;
         trie_tree[p_node].state_out=output_state_con;
+        trie_tree[p_node].out_distance=0;
     }
     return 0;
 }
@@ -299,17 +315,19 @@ int main(int argc,char **argv)
         fprintf(fp_out,"        case %d:\n",trie_tree[i].state);
         for(j=0;j<256;j++){
             if(trie_tree[i].child[j]!=0){
-                if(trie_tree[trie_tree[i].child[j]].state_out!=0 && trie_tree[trie_tree[i].child[j]].child_num==0){
-                    fprintf(fp_out,"            if(str[i]=='\\x%.2x'){*state_out=%d;return i+1;}\n",j,trie_tree[trie_tree[i].child[j]].state_out);
+                if(trie_tree[trie_tree[i].child[j]].state_out!=0){
+                    if(trie_tree[trie_tree[i].child[j]].child_num==0)
+                        fprintf(fp_out,"            if(str[i]=='\\x%.2x'){*state_out=%d;return i+1;}\n",j,trie_tree[trie_tree[i].child[j]].state_out);
+                    else
+                        fprintf(fp_out,"            if(str[i]=='\\x%.2x'){*state=%d;*state_out=%d;break;}\n",j,trie_tree[i].child[j],trie_tree[trie_tree[i].child[j]].state_out);
                 }
                 else{
                     fprintf(fp_out,"            if(str[i]=='\\x%.2x'){*state=%d;break;}\n",j,trie_tree[i].child[j]);
                 }
             }
         }
-        if(trie_tree[i].state_out!=0){
-            fprintf(fp_out,"            *state_out=%d;\n",trie_tree[i].state_out);
-            fputs("            return i;\n",fp_out);
+        if(trie_tree[i].state_out!=0 || trie_tree[i].out_distance!=0){
+            fprintf(fp_out,"            return i-%d;\n",trie_tree[i].out_distance);
         }
         else{
             if(mode==1){
