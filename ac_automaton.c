@@ -306,7 +306,7 @@ int main(int argc,char **argv)
     build_ac_automata();
     fprintf(fp_out,"unsigned %s(char *str,unsigned length,unsigned short *state,unsigned short *state_out)\n{\n",fun_name);
     fputs("    int i;\n    int lp=length;\n    *state_out=0;\n",fp_out);
-    fputs("    for(i=0;i<length;i++){\n",fp_out);
+    fputs("    for(i=0;i<length;){\n",fp_out);
     fputs("        switch(*state){\n",fp_out);
     for(i=0;i<p_free_node;i++){
         if(trie_tree[i].child_num==0){
@@ -319,10 +319,10 @@ int main(int argc,char **argv)
                     if(trie_tree[trie_tree[i].child[j]].child_num==0)
                         fprintf(fp_out,"            if(str[i]=='\\x%.2x'){*state_out=%d;return i+1;}\n",j,trie_tree[trie_tree[i].child[j]].state_out);
                     else
-                        fprintf(fp_out,"            if(str[i]=='\\x%.2x'){lp=i;*state=%d;*state_out=%d;break;}\n",j,trie_tree[i].child[j],trie_tree[trie_tree[i].child[j]].state_out);
+                        fprintf(fp_out,"            if(str[i]=='\\x%.2x'){lp=i;*state=%d;*state_out=%d;i++;break;}\n",j,trie_tree[i].child[j],trie_tree[trie_tree[i].child[j]].state_out);
                 }
                 else{
-                    fprintf(fp_out,"            if(str[i]=='\\x%.2x'){*state=%d;break;}\n",j,trie_tree[i].child[j]);
+                    fprintf(fp_out,"            if(str[i]=='\\x%.2x'){*state=%d;i++;break;}\n",j,trie_tree[i].child[j]);
                 }
             }
         }
@@ -335,6 +335,9 @@ int main(int argc,char **argv)
                 fputs("            return i+1;\n",fp_out);
             }
             else{
+                if(i==0){
+                    fprintf(fp_out,"            i++;\n");   
+                }
                 fprintf(fp_out,"            *state=%d;\n",trie_tree[i].fail);
                 fputs("            break;\n",fp_out);
             }
