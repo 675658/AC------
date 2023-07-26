@@ -1,4 +1,4 @@
-# AC_Automata
+# AC_Automaton
 
 AC自动机生成器,可以自动生成用于匹配给定字符串集的AC自动机
 
